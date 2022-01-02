@@ -1,27 +1,31 @@
 import tkinter as tk
 from tkinter import *
-from tkinter import font as tkfont  # python 3
+from tkinter import font as tkfont
 from PIL import ImageTk
 from PIL import Image
 
 from steps.login import *
-from interface.GUI_Menu import *
+from steps.likepost import *
+from steps.autofollow import *
+from steps.autocomments import *
 
 core = Instagram_Core()
 Login = Login()
-Menu = GUI_Menu()
+likefeed = LikeFeed()
+autofollow = AutoFollow()
+autocomments = AutoComments()
 
-#Configuração da troca de interface
+
+# Configuração da troca de interface
 class GUICore(tk.Tk):
 
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
 
-        self.title_font = tkfont.Font(family='Helvetica', size=18, weight="bold", slant="italic")
+        self.title_font = tkfont.Font(family='Helvetica', size=18, weight="bold")
+        self.title("Instabot by JSANTIAGO")
+        self.iconbitmap(r"..\resources\icon.ico")
 
-        # the container is where we'll stack a bunch of frames
-        # on top of each other, then the one we want visible
-        # will be raised above the others
         container = tk.Frame(self)
         container.pack(side="top", fill="both", expand=True)
         container.grid_rowconfigure(0, weight=1)
@@ -38,26 +42,33 @@ class GUICore(tk.Tk):
         self.show_frame("PageLogin")
 
     def show_frame(self, page_name):
-        # Show a frame for the given page name
         frame = self.frames[page_name]
         frame.tkraise()
 
     def geo_frame(self, valor):
         self.geometry(valor)
 
-#Pagina de Login
+
+# Pagina de Login
 class PageLogin(tk.Frame):
 
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
+
+        # Funções
+        def login_auto(element1, element2):
+            if Login.logar(element1.get(), element2.get()):
+                controller.show_frame("PageMenu")
+
+        def login_manual():
+            if Login.logar_manual():
+                controller.show_frame("PageMenu")
 
         # Acessando site do Instagram pelo Selenium
         core.access_mainpage()
 
         # Declaração
         self.controller = controller
-
-        '''controller.geo_frame("300x300")'''
 
         # Containers
         frame_Logo = tk.Frame(self)
@@ -72,7 +83,7 @@ class PageLogin(tk.Frame):
 
         # Elementos
         self.Img_Instabot = ImageTk.PhotoImage(Image.open(
-            r"C:\Users\jean_\OneDrive\Estudos e Curriculos\QA e Python\Projetos Python\InstaBot\img\Logo.png").resize(
+            r"..\resources\Logo.png").resize(
             (150, 150), Image.ANTIALIAS))
         logo = Label(frame_Logo, image=self.Img_Instabot)
         logo.pack(anchor=N)
@@ -92,23 +103,13 @@ class PageLogin(tk.Frame):
         senha = Entry(frame_Login, show="*")
         senha.grid(row=1, column=1)
 
-        button1 = tk.Button(self, text="ENTRAR",
+        btn_login = tk.Button(self, text="ENTRAR",
                             command=lambda: login_auto(login, senha))
-        button1.pack(padx=10, pady=10, anchor=CENTER)
+        btn_login.pack(padx=10, pady=10, anchor=CENTER)
 
-        # BOTÃO DE LOGIN MANUAL
-        button2 = tk.Button(self, text="LOGIN MANUAL",
+        btn_login_manual = tk.Button(self, text="LOGIN MANUAL",
                             command=lambda: login_manual())
-        button2.pack(padx=10, pady=10, anchor=CENTER)
-
-        def login_auto(element1, element2):
-            if Login.logar(element1.get(), element2.get()):
-                controller.show_frame("PageMenu")
-
-        def login_manual():
-            if Login.logar_manual():
-                controller.show_frame("PageMenu")
-
+        btn_login_manual.pack(padx=10, pady=10, anchor=CENTER)
 
 
 class PageMenu(tk.Frame):
@@ -118,7 +119,7 @@ class PageMenu(tk.Frame):
 
         # Definição
         self.controller = controller
-        '''controller.geo_frame("300x300")'''
+        controller.geo_frame("300x350")
 
         # Frames
         frame_bemvindo = tk.Frame(self)
@@ -135,30 +136,20 @@ class PageMenu(tk.Frame):
         frame_menu.pack(padx=5)
 
         # Elements
-        txt_bemvindo = tk.Label(frame_bemvindo, text=f"Bem vindo, Fulano", font=controller.title_font)
+        txt_bemvindo = tk.Label(frame_bemvindo, text=f"MENU", font=controller.title_font)
         txt_bemvindo.pack(anchor=N)
 
-        seguidores = tk.Label(frame_statusbar, text=f"Seguidores: #")
-        seguidores.pack(side='left', padx=10, pady=10)
-
-        seguindo = tk.Label(frame_statusbar, text=f"Seguindo: #")
-        seguindo.pack(side='right', padx=10, pady=10)
-
-        btn_LikePosts = tk.Button(frame_menu, text="LikePosts",
+        btn_likeposts = tk.Button(frame_menu, text="LikePosts",
                                   command=lambda: likefeed.run_like())
-        btn_LikePosts.grid(row=0, column=0, padx=10, pady=10)
+        btn_likeposts.grid(row=0, column=0, padx=10, pady=10)
 
-        btn_AutoFollow = tk.Button(frame_menu, text="AutoFollow",
-                                   command=lambda: controller.show_frame("PageLogin"))
-        btn_AutoFollow.grid(row=0, column=1, padx=10, pady=10)
+        btn_autofollow = tk.Button(frame_menu, text="AutoFollow",
+                                   command=lambda: autofollow.run_follow())
+        btn_autofollow.grid(row=1, column=0, padx=10, pady=10)
 
-        btn_AutoComments = tk.Button(frame_menu, text="AutoComments",
-                                     command=lambda: controller.show_frame("PageLogin"))
-        btn_AutoComments.grid(row=1, column=0, padx=10, pady=10)
-
-        btn_SelfCommentsLike = tk.Button(frame_menu, text="SelfCommentsLike",
-                                         command=lambda: controller.show_frame("PageLogin"))
-        btn_SelfCommentsLike.grid(row=1, column=1, padx=10, pady=10)
+        btn_autocomments = tk.Button(frame_menu, text="AutoComments",
+                                     command=lambda: autocomments.run_comments())
+        btn_autocomments.grid(row=2, column=0, padx=10, pady=10)
 
 
 if __name__ == "__main__":
